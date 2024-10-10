@@ -81,7 +81,7 @@ install_command_line_tools(){
 
     # Install go tools
     for lib in "${GO_LIBS[@]}"; do
-        go install $lib
+        go install -v $lib
     done
 
     install_ffuf
