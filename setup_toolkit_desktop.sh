@@ -15,7 +15,7 @@ GO_LIBS=("github.com/tomnomnom/assetfinder@latest"
 BINARIES=("https://github.com/findomain/findomain/releases/latest/download/findomain-linux-i386.zip" #latest
           "https://github.com/assetnote/kiterunner/releases/download/v1.0.2/kiterunner_1.0.2_linux_386.tar.gz" # 11.04.2021
 )
-RESOURCES=("https://raw.githubusercontent.com/tomnomnom/meg/master/lists/configfiles"
+WORDLISTS=("https://raw.githubusercontent.com/tomnomnom/meg/master/lists/configfiles"
            "https://gist.githubusercontent.com/alejandro501/b74499c764ec8b77c6579320db97c073/raw/4ddc1ebf8a08a55094ac71c488c8851d74db5df7/common-headers-small.txt"
            "https://gist.githubusercontent.com/alejandro501/fd7c2e16d957ef01662ed9e7f6eb2115/raw/e3f3b8c825853eb491a5730f5ecb2be4ae63a03c/common-headers-medium.txt"
 )
@@ -100,18 +100,19 @@ install_environment(){
     sudo apt install -y python3 python3-pip
 }
 
-setup_resources(){
-    # Check and create hack resources folder if necessary
-    [[ ! -d ~/hack ]] && mkdir -p ~/hack/resources/
-    # Download additional resources if they don't already exist
-    for resource in "${RESOURCES[@]}"; do
-        if [[ ! -f ~/hack/resources/$(basename $resource) ]]; then
-            wget -P ~/hack/resources/ "$resource"
+setup_wordlists(){
+    # Check and create hack wordlists folder if necessary
+    [[ ! -d ~/hack/resources/wordlists ]] && mkdir -p ~/hack/resources/wordlists/
+    
+    # Download additional wordlist resources if they don't already exist
+    for wordlist in "${WORDLISTS[@]}"; do
+        if [[ ! -f ~/hack/resources/wordlists/$(basename $wordlist) ]]; then
+            wget -P ~/hack/resources/wordlists/ "$wordlist"
         fi
     done
 
     # Download Nuclei templates
-    NUCLEI_TEMPLATES_DIR=~/hack/resources/nuclei-templates
+    NUCLEI_TEMPLATES_DIR=~/hack/resources/wordlists/nuclei-templates
     if [[ ! -d $NUCLEI_TEMPLATES_DIR ]]; then
         git clone https://github.com/projectdiscovery/nuclei-templates.git $NUCLEI_TEMPLATES_DIR
         echo "Nuclei templates downloaded to $NUCLEI_TEMPLATES_DIR."
@@ -123,7 +124,7 @@ setup_resources(){
 main(){
     install_environment
     install_command_line_tools
-    setup_resources
+    setup_wordlists
 }
 
 main
