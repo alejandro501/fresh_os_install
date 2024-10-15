@@ -1,6 +1,6 @@
 #!/bin/bash
 
-APT_LIBS=("unzip" "curl")
+APT_LIBS=("unzip" "curl" "tor")
 GO_LIBS=("github.com/tomnomnom/assetfinder@latest"
          "github.com/tomnomnom/anew@latest"
          "github.com/tomnomnom/httprobe@master"
@@ -13,7 +13,7 @@ GO_LIBS=("github.com/tomnomnom/assetfinder@latest"
          "github.com/projectdiscovery/nuclei/v3/cmd/nuclei@latest" #v3
 )
 BINARIES=("https://github.com/findomain/findomain/releases/latest/download/findomain-linux-i386.zip" #latest
-          "https://github.com/assetnote/kiterunner/releases/download/v1.0.2/kiterunner_1.0.2_linux_386.tar.gz" # 11.04.2021
+          "https://github.com/assetnote/kiterunner/releases/download/v1.0.2/kiterunner_1.0.2_linux_386.tar.gz" # 11.04.2021 - this is the latest version in 2024
 )
 WORDLISTS=("https://raw.githubusercontent.com/tomnomnom/meg/master/lists/configfiles"
            "https://gist.githubusercontent.com/alejandro501/b74499c764ec8b77c6579320db97c073/raw/4ddc1ebf8a08a55094ac71c488c8851d74db5df7/common-headers-small.txt"
@@ -76,9 +76,6 @@ install_command_line_tools(){
         fi
     done
 
-    # Install Aquatone
-    install_aquatone
-
     # Install go tools
     for lib in "${GO_LIBS[@]}"; do
         go install -v $lib
@@ -121,11 +118,56 @@ setup_wordlists(){
     fi
 }
 
-main(){
-    install_environment
-    install_command_line_tools
-    setup_wordlists
+generate_ssh_key(){
+    # Check if SSH key already exists
+    if [[ -f "$HOME/.ssh/id_rsa" ]]; then
+        echo "SSH key already exists. Skipping generation."
+    else
+        # Generate a new SSH key
+        echo "Generating a new SSH key..."
+        ssh-keygen -t rsa -b 4096 -f ~/.ssh/id_rsa -N "" -C "$(whoami)@$(hostname).xyz"
+
+        # Add SSH key to the agent
+        eval "$(ssh-agent -s)"
+        ssh-add ~/.ssh/id_rsa
+
+        # Display public key to the user
+        echo "SSH key generated. Your public key is:"
+        cat ~/.ssh/id_rsa.pub
+        echo "Copy this key and add it to your GitHub/Bitbucket/etc."
+    fi
 }
 
-main
+main(){
+    DESKTOP=""
 
+    while [[ "$1" != "" ]]; do
+        case $1 in
+            --no-desktop ) DESKTOP=0 ;;
+            --desktop ) DESKTOP=1 ;;
+        esac
+        shift
+    done
+
+    if [[ "$DESKTOP" == "" ]]; then
+        echo "Please choose one:"
+        select choice in "Desktop" "No Desktop"; do
+            case $choice in
+                Desktop ) DESKTOP=1; break ;;
+                "No Desktop" ) DESKTOP=0; break ;;
+            esac
+        done
+    fi
+
+    install_environment
+    install_command_line_tools
+
+    if [[ "$DESKTOP" == 1 ]]; then
+        install_aquatone
+    fi
+    
+    setup_wordlists
+    generate_ssh_key
+}
+
+main "$@"
