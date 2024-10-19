@@ -1,6 +1,6 @@
 #!/bin/bash
 
-APT_LIBS=("unzip" "curl" "tor")
+APT_LIBS=("unzip" "curl" "tor" "xclip")
 GO_LIBS=("github.com/tomnomnom/assetfinder@latest"
          "github.com/tomnomnom/anew@latest"
          "github.com/tomnomnom/httprobe@master"
