@@ -19,6 +19,8 @@ WORDLISTS=("https://raw.githubusercontent.com/tomnomnom/meg/master/lists/configf
            "https://gist.githubusercontent.com/alejandro501/b74499c764ec8b77c6579320db97c073/raw/4ddc1ebf8a08a55094ac71c488c8851d74db5df7/common-headers-small.txt"
            "https://gist.githubusercontent.com/alejandro501/fd7c2e16d957ef01662ed9e7f6eb2115/raw/e3f3b8c825853eb491a5730f5ecb2be4ae63a03c/common-headers-medium.txt"
 )
+KITERUNNER_JSONS=("https://wordlists-cdn.assetnote.io/rawdata/kiterunner/routes-large.json.tar.gz"
+                  "https://wordlists-cdn.assetnote.io/rawdata/kiterunner/routes-small.json.tar.gz")
 
 GIT_CLONE="https://github.com/ffuf/ffuf"
 
@@ -108,6 +110,13 @@ setup_wordlists(){
         fi
     done
 
+    # Download KiteRunner JSON datasets
+    [[ ! -d ~/hack/resources/kiterunner ]] && mkdir -p ~/hack/resources/kiterunner/
+    for json_url in "${KITERUNNER_JSONS[@]}"; do
+        wget -P ~/hack/resources/kiterunner/ "$json_url"
+        tar -xf ~/hack/resources/kiterunner/$(basename "$json_url") -C ~/hack/resources/kiterunner/
+    done
+
     # Download Nuclei templates
     NUCLEI_TEMPLATES_DIR=~/hack/resources/wordlists/nuclei-templates
     if [[ ! -d $NUCLEI_TEMPLATES_DIR ]]; then
@@ -119,19 +128,15 @@ setup_wordlists(){
 }
 
 generate_ssh_key(){
-    # Check if SSH key already exists
     if [[ -f "$HOME/.ssh/id_rsa" ]]; then
         echo "SSH key already exists. Skipping generation."
     else
-        # Generate a new SSH key
         echo "Generating a new SSH key..."
         ssh-keygen -t rsa -b 4096 -f ~/.ssh/id_rsa -N "" -C "$(whoami)@$(hostname).xyz"
 
-        # Add SSH key to the agent
         eval "$(ssh-agent -s)"
         ssh-add ~/.ssh/id_rsa
 
-        # Display public key to the user
         echo "SSH key generated. Your public key is:"
         cat ~/.ssh/id_rsa.pub
         echo "Copy this key and add it to your GitHub/Bitbucket/etc."
