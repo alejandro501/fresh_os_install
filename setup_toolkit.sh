@@ -1,5 +1,6 @@
 #!/bin/bash
 
+# Constants
 APT_LIBS=("unzip" "curl" "tor" "xclip" "jq")
 GO_LIBS=("github.com/tomnomnom/assetfinder@latest"
          "github.com/tomnomnom/anew@latest"
@@ -24,8 +25,11 @@ KITERUNNER_JSONS=("https://wordlists-cdn.assetnote.io/rawdata/kiterunner/routes-
 
 GIT_CLONE="https://github.com/ffuf/ffuf"
 
+# alejandro
 BINARY_REPO_URL="https://github.com/alejandro501/bin.git"
+RESOURCES_REPO_URL="git@github.com:alejandro501/resources.git"
 
+# Functions
 add_my_binaries(){
     TARGET_DIR="/opt/bin"
 
@@ -111,39 +115,48 @@ install_command_line_tools(){
 }
 
 install_environment(){
-    # Install Golang
+    # go
     sudo apt install -y golang-go
     echo 'export GOPATH=$HOME/go' >> ~/.bashrc
     echo 'export GOBIN=$GOPATH/bin' >> ~/.bashrc
     echo 'export PATH=$PATH:/usr/local/go/bin:$GOBIN' >> ~/.bashrc
-    echo 'export PATH=$PATH:~/go/bin' >> ~/.bashrc  # Add Go binaries path
+    echo 'export PATH=$PATH:~/go/bin' >> ~/.bashrc
     source ~/.bashrc
 
+    # python
     sudo apt install -y python3 python3-pip
 }
 
 setup_wordlists(){
-    # Check and create hack wordlists folder if necessary
-    [[ ! -d ~/hack/resources/wordlists ]] && mkdir -p ~/hack/resources/wordlists/
+    RESOURCES_DIR=~/hack
+    if [[ ! -d $RESOURCES_DIR ]]; then
+        git clone "$RESOURCES_REPO_URL" "$RESOURCES_DIR"
+        echo "Resources cloned to $RESOURCES_DIR."
+    else
+        echo "Resources already exist in $RESOURCES_DIR."
+    fi
+
+    WORDLISTS_DIR="$RESOURCES_DIR/wordlists"
+    [[ ! -d $WORDLISTS_DIR ]] && mkdir -p $WORDLISTS_DIR
     
-    # Download additional wordlist resources if they don't already exist
     for wordlist in "${WORDLISTS[@]}"; do
-        if [[ ! -f ~/hack/resources/wordlists/$(basename $wordlist) ]]; then
-            wget -P ~/hack/resources/wordlists/ "$wordlist"
+        if [[ ! -f "$WORDLISTS_DIR/$(basename $wordlist)" ]]; then
+            wget -P "$WORDLISTS_DIR" "$wordlist"
         fi
     done
 
     # Download KiteRunner JSON datasets
-    [[ ! -d ~/hack/resources/kiterunner ]] && mkdir -p ~/hack/resources/kiterunner/
+    KITERUNNER_DIR="$RESOURCES_DIR/kiterunner"
+    [[ ! -d $KITERUNNER_DIR ]] && mkdir -p $KITERUNNER_DIR
     for json_url in "${KITERUNNER_JSONS[@]}"; do
-        wget -P ~/hack/resources/kiterunner/ "$json_url"
-        tar -xf ~/hack/resources/kiterunner/$(basename "$json_url") -C ~/hack/resources/kiterunner/
+        wget -P "$KITERUNNER_DIR" "$json_url"
+        tar -xf "$KITERUNNER_DIR/$(basename "$json_url")" -C "$KITERUNNER_DIR/"
     done
 
     # Download Nuclei templates
-    NUCLEI_TEMPLATES_DIR=~/hack/resources/wordlists/nuclei-templates
+    NUCLEI_TEMPLATES_DIR="$WORDLISTS_DIR/nuclei-templates"
     if [[ ! -d $NUCLEI_TEMPLATES_DIR ]]; then
-        git clone https://github.com/projectdiscovery/nuclei-templates.git $NUCLEI_TEMPLATES_DIR
+        git clone https://github.com/projectdiscovery/nuclei-templates.git "$NUCLEI_TEMPLATES_DIR"
         echo "Nuclei templates downloaded to $NUCLEI_TEMPLATES_DIR."
     else
         echo "Nuclei templates already exist in $NUCLEI_TEMPLATES_DIR."
