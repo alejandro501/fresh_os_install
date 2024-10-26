@@ -1,6 +1,6 @@
 #!/bin/bash
 
-APT_LIBS=("unzip" "curl" "tor" "xclip")
+APT_LIBS=("unzip" "curl" "tor" "xclip" "jq")
 GO_LIBS=("github.com/tomnomnom/assetfinder@latest"
          "github.com/tomnomnom/anew@latest"
          "github.com/tomnomnom/httprobe@master"
@@ -23,6 +23,29 @@ KITERUNNER_JSONS=("https://wordlists-cdn.assetnote.io/rawdata/kiterunner/routes-
                   "https://wordlists-cdn.assetnote.io/rawdata/kiterunner/routes-small.json.tar.gz")
 
 GIT_CLONE="https://github.com/ffuf/ffuf"
+
+BINARY_REPO_URL="https://github.com/alejandro501/bin.git"
+
+add_my_binaries(){
+    TARGET_DIR="/opt/bin"
+
+    sudo mkdir -p "$TARGET_DIR"
+    
+    if [ ! -d "$TARGET_DIR/bin" ]; then
+        sudo git clone "$BINARY_REPO_URL" "$TARGET_DIR/bin"
+        echo "Cloned $BINARY_REPO_URL into $TARGET_DIR."
+    else
+        echo "$TARGET_DIR/bin already exists. Skipping clone."
+    fi
+
+    for script in "$TARGET_DIR/bin/"*; do
+        if [ -x "$script" ]; then
+            script_name=$(basename "$script")
+            sudo ln -sf "$script" "/usr/local/bin/$script_name"
+            echo "Created symlink for $script_name in /usr/local/bin."
+        fi
+    done
+}
 
 install_ffuf(){
     git clone $GIT_CLONE
@@ -166,6 +189,7 @@ main(){
 
     install_environment
     install_command_line_tools
+    add_my_binaries
 
     if [[ "$DESKTOP" == 1 ]]; then
         install_aquatone
