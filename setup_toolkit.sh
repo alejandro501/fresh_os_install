@@ -24,6 +24,7 @@ AMASS_CONFIG=("https://raw.githubusercontent.com/owasp-amass/amass/refs/heads/ma
 )
 
 WORDLISTS=("https://raw.githubusercontent.com/tomnomnom/meg/master/lists/configfiles"
+    "https://raw.githubusercontent.com/hAPI-hacker/Hacking-APIs/refs/heads/main/api_docs_path"
     "https://gist.githubusercontent.com/alejandro501/b74499c764ec8b77c6579320db97c073/raw/4ddc1ebf8a08a55094ac71c488c8851d74db5df7/common-headers-small.txt"
     "https://gist.githubusercontent.com/alejandro501/fd7c2e16d957ef01662ed9e7f6eb2115/raw/e3f3b8c825853eb491a5730f5ecb2be4ae63a03c/common-headers-medium.txt"
 )
