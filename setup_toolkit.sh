@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Constants
-APT_LIBS=("unzip" "curl" "tor" "xclip" "jq" "nmap")
+APT_LIBS=("unzip" "curl" "tor" "xclip" "jq" "nmap" "npm" "whois")
 GO_LIBS=("github.com/tomnomnom/assetfinder@latest"
     "github.com/tomnomnom/anew@latest"
     "github.com/tomnomnom/httprobe@master"
