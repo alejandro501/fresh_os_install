@@ -1,76 +1,72 @@
-# Automated Environment Setup
+# Tools Installed by `setup_toolkit.sh`
 
-This script sets up a full development and reconnaissance environment with necessary tools, extensions, and configurations. It installs:
+This file reflects what the current script installs on fresh Ubuntu.
 
-- **APT Libraries**
-- **Go-Based Tools**
-- **Binaries**
-- **FFUF**
-- **Desktop Applications**
-- **Firefox Extensions**
+## APT packages
+- build-essential
+- ca-certificates
+- curl
+- git
+- gnupg
+- jq
+- lsb-release
+- make
+- nmap
+- npm
+- python3
+- python3-pip
+- software-properties-common
+- tor
+- unzip
+- wget
+- whois
+- brave-browser
+- firefox
+- caido (if available in APT repositories)
 
-## Features
+## Go-installed tools
+- assetfinder (`github.com/tomnomnom/assetfinder`)
+- anew (`github.com/tomnomnom/anew`)
+- httprobe (`github.com/tomnomnom/httprobe`)
+- html-tool (`github.com/tomnomnom/hacks/html-tool`)
+- waybackurls (`github.com/tomnomnom/waybackurls`)
+- gobuster (`github.com/OJ/gobuster/v3`)
+- subfinder (`github.com/projectdiscovery/subfinder/v2/cmd/subfinder`)
+- httpx (`github.com/projectdiscovery/httpx/cmd/httpx`)
+- nuclei (`github.com/projectdiscovery/nuclei/v3/cmd/nuclei`)
+- sj (`github.com/BishopFox/sj`)
+- jsluice (`github.com/BishopFox/jsluice/cmd/jsluice`)
+- toxicache (`github.com/xhzeem/toxicache`)
+- amass (`github.com/owasp-amass/amass/v4/cmd/amass`)
+- ffuf (`github.com/ffuf/ffuf/v2`)
+- h2csmuggler (`github.com/assetnote/h2csmuggler/cmd/h2csmuggler`)
+- kiterunner (`github.com/assetnote/kiterunner/cmd/kiterunner`)
 
-### Extensions
+## Direct binary installs
+- findomain (GitHub release binary)
+- aquatone (GitHub release binary, desktop mode only)
 
-- **Wappalyzer**: Technology profiler to identify the software on websites.
-- **FoxyProxy**: Easily switch between proxy configurations.
-- **Firefox Containers**: Helps isolate different browsing sessions for security and privacy.
+## Snap packages (desktop mode)
+- doctl
+- google-cloud-cli
+- marktext
+- postman
+- radare2
+- searchsploit
+- spotify
 
-### Command-Line Tools
+## Git-cloned resources and wordlists
+- `https://github.com/alejandro501/bin.git` -> linked into `/usr/local/bin`
+- `https://github.com/alejandro501/resources.git`
+- `https://github.com/danielmiessler/SecLists.git`
+- `https://github.com/projectdiscovery/nuclei-templates.git`
 
-#### APT Libraries
-- `unzip`: Utility to extract ZIP files.
-- `curl`: Tool for transferring data with URLs.
-- `tor`: Anonymous network access tool.
-- `xclip`: Command line clipboard copy/paste.
-- `jq`: JSON processor.
-- `nmap`: Network discovery and security auditing tool.
-
-#### Go-Based Tools
-- **assetfinder**: Find domains and subdomains related to target.
-- **anew**: Appends new results to a file.
-- **httprobe**: Probes domains for HTTP/HTTPS.
-- **fff**: File find tool.
-- **gf**: Pattern matching utility.
-- **html-tool**: HTML parsing and manipulation.
-- **waybackurls**: Fetch archived URLs from the Wayback Machine.
-- **gobuster**: Directory and DNS brute-forcing.
-- **subfinder**: Subdomain discovery tool.
-- **sj (SwaggerJacker)**: Swagger file manipulation.
-- **toxicache**: Tool for cache poisoning.
-
-#### Binaries
-- **Findomain**: Fast subdomain discovery tool.
-- **Kiterunner**: Web path brute-forcing tool.
-
-#### FFUF
-- **ffuf**: Fast web fuzzer.
-
-### Desktop Applications
-
-- **Postman**: API development environment.
-- **Caido**: Security analysis tool.
-- **Discord**: Communication platform.
-
-## Setup Instructions
-
-### Prerequisites
-Ensure you have `golang-go` and `python3` installed on your system.
-
-### Running the Script
-
-To run the script, execute the following command:
-
-```sh
-chmod +x setup_script.sh
-./setup_script.sh
-```
-### Options
-Run with --desktop to include desktop applications or --no-desktop to exclude them. """
-Save the content to a README.md file
-```sh
-readme_file_path = "/mnt/data/README.md" with open(readme_file_path, "w") as file: file.write(readme_content)
-
-readme_file_path
-```
+## Downloaded files/config
+- Amass configs: `config.yaml`, `datasources.yaml`
+- Wordlist files from:
+  - `tomnomnom/meg` configfiles
+  - `hAPI-hacker/Hacking-APIs` api_docs_path
+  - your two header gists
+- Kiterunner datasets:
+  - routes-large.json.tar.gz
+  - routes-small.json.tar.gz

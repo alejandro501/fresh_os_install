@@ -1,259 +1,371 @@
-#!/bin/bash
+#!/usr/bin/env bash
+set -euo pipefail
 
-# Constants
-APT_LIBS=("unzip" "curl" "tor" "xclip" "jq" "nmap" "npm" "whois")
-GO_LIBS=("github.com/tomnomnom/assetfinder@latest"
-    "github.com/tomnomnom/anew@latest"
-    "github.com/tomnomnom/httprobe@master"
-    "github.com/tomnomnom/hacks/html-tool@latest"
-    "github.com/tomnomnom/waybackurls@latest"
-    "github.com/OJ/gobuster/v3@latest"
-    "github.com/projectdiscovery/subfinder/v2/cmd/subfinder@latest"
-    "github.com/BishopFox/sj@latest"
-    "github.com/xhzeem/toxicache@latest"
-    "github.com/projectdiscovery/nuclei/v3/cmd/nuclei@latest" #v3
-    "github.com/BishopFox/jsluice/cmd/jsluice@latest"
-    "github.com/owasp-amass/amass/v4/...@master" #v4
-)
-BINARIES=("https://github.com/findomain/findomain/releases/latest/download/findomain-linux-i386.zip"     #latest
-    "https://github.com/assetnote/kiterunner/releases/download/v1.0.2/kiterunner_1.0.2_linux_386.tar.gz" # 11.04.2021 - this is the latest version in 2024
-)
-
-AMASS_CONFIG=("https://raw.githubusercontent.com/owasp-amass/amass/refs/heads/master/examples/config.yaml"
-    "https://raw.githubusercontent.com/owasp-amass/amass/refs/heads/master/examples/datasources.yaml"
+APT_LIBS=(
+  "build-essential"
+  "ca-certificates"
+  "curl"
+  "git"
+  "gnupg"
+  "jq"
+  "lsb-release"
+  "make"
+  "nmap"
+  "npm"
+  "python3"
+  "python3-pip"
+  "software-properties-common"
+  "tor"
+  "unzip"
+  "wget"
+  "whois"
 )
 
-WORDLISTS=("https://raw.githubusercontent.com/tomnomnom/meg/master/lists/configfiles"
-    "https://raw.githubusercontent.com/hAPI-hacker/Hacking-APIs/refs/heads/main/api_docs_path"
-    "https://gist.githubusercontent.com/alejandro501/b74499c764ec8b77c6579320db97c073/raw/4ddc1ebf8a08a55094ac71c488c8851d74db5df7/common-headers-small.txt"
-    "https://gist.githubusercontent.com/alejandro501/fd7c2e16d957ef01662ed9e7f6eb2115/raw/e3f3b8c825853eb491a5730f5ecb2be4ae63a03c/common-headers-medium.txt"
+GO_TOOLS=(
+  "github.com/tomnomnom/assetfinder@latest"
+  "github.com/tomnomnom/anew@latest"
+  "github.com/tomnomnom/httprobe@latest"
+  "github.com/tomnomnom/hacks/html-tool@latest"
+  "github.com/tomnomnom/waybackurls@latest"
+  "github.com/OJ/gobuster/v3@latest"
+  "github.com/projectdiscovery/subfinder/v2/cmd/subfinder@latest"
+  "github.com/projectdiscovery/httpx/cmd/httpx@latest"
+  "github.com/projectdiscovery/nuclei/v3/cmd/nuclei@latest"
+  "github.com/BishopFox/sj@latest"
+  "github.com/BishopFox/jsluice/cmd/jsluice@latest"
+  "github.com/xhzeem/toxicache@latest"
+  "github.com/owasp-amass/amass/v4/cmd/amass@latest"
+  "github.com/ffuf/ffuf/v2@latest"
+  "github.com/assetnote/h2csmuggler/cmd/h2csmuggler@latest"
+  "github.com/assetnote/kiterunner/cmd/kiterunner@latest"
+)
+
+AMASS_CONFIG=(
+  "https://raw.githubusercontent.com/owasp-amass/amass/refs/heads/master/examples/config.yaml"
+  "https://raw.githubusercontent.com/owasp-amass/amass/refs/heads/master/examples/datasources.yaml"
+)
+
+WORDLISTS=(
+  "https://raw.githubusercontent.com/tomnomnom/meg/master/lists/configfiles"
+  "https://raw.githubusercontent.com/hAPI-hacker/Hacking-APIs/refs/heads/main/api_docs_path"
+  "https://gist.githubusercontent.com/alejandro501/b74499c764ec8b77c6579320db97c073/raw/4ddc1ebf8a08a55094ac71c488c8851d74db5df7/common-headers-small.txt"
+  "https://gist.githubusercontent.com/alejandro501/fd7c2e16d957ef01662ed9e7f6eb2115/raw/e3f3b8c825853eb491a5730f5ecb2be4ae63a03c/common-headers-medium.txt"
 )
 
 CLONE_WORDLISTS=(
-    "https://github.com/danielmiessler/SecLists.git"
+  "https://github.com/danielmiessler/SecLists.git"
 )
 
-KITERUNNER_JSONS=("https://wordlists-cdn.assetnote.io/rawdata/kiterunner/routes-large.json.tar.gz"
-    "https://wordlists-cdn.assetnote.io/rawdata/kiterunner/routes-small.json.tar.gz")
+SNAP_PACKAGES=(
+  "doctl"
+  "google-cloud-cli"
+  "marktext"
+  "postman"
+  "radare2"
+  "searchsploit"
+  "spotify"
+)
 
-GIT_CLONE="https://github.com/ffuf/ffuf"
+KITERUNNER_JSONS=(
+  "https://wordlists-cdn.assetnote.io/rawdata/kiterunner/routes-large.json.tar.gz"
+  "https://wordlists-cdn.assetnote.io/rawdata/kiterunner/routes-small.json.tar.gz"
+)
 
-# alejandro
+EXTRA_APT_PACKAGES=("brave-browser" "firefox" "caido")
+
 BINARY_REPO_URL="https://github.com/alejandro501/bin.git"
-RESOURCES_REPO_URL="git@github.com:alejandro501/resources.git"
+RESOURCES_REPO_URL="https://github.com/alejandro501/resources.git"
 
-# Functions
+ensure_bashrc_line() {
+  local line="$1"
+  grep -Fqx "$line" "$HOME/.bashrc" || echo "$line" >>"$HOME/.bashrc"
+}
+
+add_extra_repos() {
+  sudo install -m 0755 -d /etc/apt/keyrings
+
+  curl -fsSLo /tmp/brave.gpg https://brave-browser-apt-release.s3.brave.com/brave-browser-archive-keyring.gpg
+  sudo install -D -m 0644 /tmp/brave.gpg /etc/apt/keyrings/brave-browser-archive-keyring.gpg
+  echo "deb [signed-by=/etc/apt/keyrings/brave-browser-archive-keyring.gpg] https://brave-browser-apt-release.s3.brave.com/ stable main" |
+    sudo tee /etc/apt/sources.list.d/brave-browser-release.list >/dev/null
+
+  rm -f /tmp/brave.gpg
+}
+
+apt_has_candidate() {
+  local pkg="$1"
+  local candidate
+  candidate=$(apt-cache policy "$pkg" 2>/dev/null | awk '/Candidate:/ {print $2}')
+  [[ -n "$candidate" && "$candidate" != "(none)" ]]
+}
+
 add_my_binaries() {
-    TARGET_DIR="/opt/bin"
+  local target_dir="/opt/bin"
 
-    sudo mkdir -p "$TARGET_DIR"
+  if [[ -d "$target_dir/.git" ]]; then
+    sudo git -C "$target_dir" pull --ff-only
+  elif [[ -e "$target_dir" ]]; then
+    echo "$target_dir exists but is not a git repo. Skipping clone for safety."
+  else
+    sudo git clone "$BINARY_REPO_URL" "$target_dir"
+  fi
 
-    if [ ! -d "$TARGET_DIR/bin" ]; then
-        sudo git clone "$BINARY_REPO_URL" "$TARGET_DIR/bin"
-        echo "Cloned $BINARY_REPO_URL into $TARGET_DIR."
-    else
-        echo "$TARGET_DIR/bin already exists. Skipping clone."
+  for script in "$target_dir/"*; do
+    if [[ -x "$script" ]]; then
+      local script_name
+      script_name=$(basename "$script")
+      sudo ln -sf "$script" "/usr/local/bin/$script_name"
+      echo "Linked /usr/local/bin/$script_name"
     fi
-
-    for script in "$TARGET_DIR/bin/"*; do
-        if [ -x "$script" ]; then
-            script_name=$(basename "$script")
-            sudo ln -sf "$script" "/usr/local/bin/$script_name"
-            echo "Created symlink for $script_name in /usr/local/bin."
-        fi
-    done
+  done
 }
 
-install_ffuf() {
-    git clone $GIT_CLONE
-    cd ffuf || exit
-    go get
-    go build
-    sudo mv ffuf /usr/local/bin/
-    cd ..
-    rm -rf ffuf
-    echo "ffuf installed."
-}
+install_findomain_binary() {
+  local tmp_dir
+  tmp_dir=$(mktemp -d)
+  local urls=(
+    "https://github.com/findomain/findomain/releases/latest/download/findomain-linux.zip"
+    "https://github.com/findomain/findomain/releases/latest/download/findomain-linux-i386.zip"
+  )
 
-install_h2csmuggler() {
-    git clone https://github.com/assetnote/h2csmuggler.git
-    cd h2csmuggler || exit
-    go build -o h2csmuggler ./cmd/h2csmuggler
-    sudo mv h2csmuggler /usr/local/bin/
-    cd ..
-    rm -rf h2csmuggler
-    echo "h2csmuggler installed."
+  for url in "${urls[@]}"; do
+    if curl -fsSL "$url" -o "$tmp_dir/findomain.zip"; then
+      unzip -qo "$tmp_dir/findomain.zip" -d "$tmp_dir"
+      if [[ -f "$tmp_dir/findomain" ]]; then
+        sudo install -m 0755 "$tmp_dir/findomain" /usr/local/bin/findomain
+        rm -rf "$tmp_dir"
+        echo "Installed findomain from $url"
+        return
+      fi
+    fi
+  done
+
+  rm -rf "$tmp_dir"
+  echo "Failed to install findomain binary." >&2
 }
 
 install_aquatone() {
-    DOWNLOAD_URL="https://github.com/michenriksen/aquatone/releases/download/v1.7.0/aquatone_linux_amd64_1.7.0.zip" # 19.05.2019
+  local download_url="https://github.com/michenriksen/aquatone/releases/download/v1.7.0/aquatone_linux_amd64_1.7.0.zip"
+  local tmp_dir
+  tmp_dir=$(mktemp -d)
 
-    curl -L -o aquatone.zip "$DOWNLOAD_URL"
-    unzip aquatone.zip
-    sudo mv aquatone /usr/local/bin/
-    sudo chmod +x /usr/local/bin/aquatone
-    rm aquatone.zip
-    echo "aquatone installed."
-}
+  curl -fsSL "$download_url" -o "$tmp_dir/aquatone.zip"
+  unzip -qo "$tmp_dir/aquatone.zip" -d "$tmp_dir"
+  sudo install -m 0755 "$tmp_dir/aquatone" /usr/local/bin/aquatone
 
-install_command_line_tools() {
-    sudo apt update && sudo apt upgrade -y
-    sudo apt autoclean && sudo apt autoremove -y
-
-    # Install APT libraries
-    for lib in "${APT_LIBS[@]}"; do
-        sudo apt install -y $lib
-    done
-
-    # Install binaries
-    for url in "${BINARIES[@]}"; do
-        filename=$(basename "$url")
-        if [[ $url == *"findomain"* ]]; then
-            curl -LO $url && unzip findomain-linux-i386.zip
-            sudo mv findomain /usr/bin/findomain
-        elif [[ $url == *"kiterunner"* ]]; then
-            wget $url && tar -xf $filename
-            make build
-            sudo mv kr /usr/local/bin/
-        fi
-    done
-
-    # Install go tools
-    for lib in "${GO_LIBS[@]}"; do
-        go install -v $lib
-    done
-
-    install_ffuf
-    install_h2csmuggler
+  rm -rf "$tmp_dir"
+  echo "Installed aquatone."
 }
 
 install_environment() {
-    # go
-    sudo apt install -y golang-go
-    echo 'export GOPATH=$HOME/go' >>~/.bashrc
-    echo 'export GOBIN=$GOPATH/bin' >>~/.bashrc
-    echo 'export PATH=$PATH:/usr/local/go/bin:$GOBIN' >>~/.bashrc
-    echo 'export PATH=$PATH:~/go/bin' >>~/.bashrc
-    source ~/.bashrc
+  sudo apt update
+  sudo apt upgrade -y
+  sudo apt autoclean -y
+  sudo apt autoremove -y
 
-    # python
-    sudo apt install -y python3 python3-pip
+  sudo apt install -y golang-go
+
+  ensure_bashrc_line 'export GOPATH="$HOME/go"'
+  ensure_bashrc_line 'export GOBIN="$GOPATH/bin"'
+  ensure_bashrc_line 'export PATH="$PATH:/usr/local/go/bin:$GOBIN"'
+  ensure_bashrc_line 'export PATH="$PATH:/opt/bin"'
+}
+
+install_command_line_tools() {
+  add_extra_repos
+  sudo apt update
+
+  for lib in "${APT_LIBS[@]}"; do
+    sudo apt install -y "$lib"
+  done
+
+  for pkg in "${EXTRA_APT_PACKAGES[@]}"; do
+    if apt_has_candidate "$pkg"; then
+      sudo apt install -y "$pkg"
+    else
+      echo "Skipping $pkg (no APT candidate on this system)."
+    fi
+  done
+
+  install_findomain_binary
+
+  export GOPATH="${GOPATH:-$HOME/go}"
+  export GOBIN="${GOBIN:-$GOPATH/bin}"
+  export PATH="$PATH:$GOBIN"
+  mkdir -p "$GOBIN"
+
+  for lib in "${GO_TOOLS[@]}"; do
+    go install -v "$lib"
+  done
 }
 
 setup_config() {
-    # my custom config stuff
-    mkdir -p ~/.config/.sol
+  mkdir -p "$HOME/.config/.sol"
+  mkdir -p "$HOME/.config/amass"
 
-    # amass
-    mkdir -p "$HOME/.config/amass"
-
-    for url in "${AMASS_CONFIG[@]}"; do
-        filename=$(basename "$url") # Extract filename from URL
-        curl -L "$url" -o "$HOME/.config/amass/$filename"
-        echo "$filename downloaded to $HOME/.config/amass."
-    done
-
-    echo "Amass configuration and datasources set up at $HOME/.config/amass."
-
-    # custom
+  for url in "${AMASS_CONFIG[@]}"; do
+    local filename
+    filename=$(basename "$url")
+    curl -fsSL "$url" -o "$HOME/.config/amass/$filename"
+  done
 }
 
 setup_wordlists() {
-    RESOURCES_DIR=~/hack
-    if [[ ! -d $RESOURCES_DIR ]]; then
-        git clone "$RESOURCES_REPO_URL" "$RESOURCES_DIR"
-        echo "Resources cloned to $RESOURCES_DIR."
-    else
-        echo "Resources already exist in $RESOURCES_DIR."
+  local resources_dir="$HOME/hack/resources"
+  local wordlists_dir="$resources_dir/wordlists"
+
+  if [[ ! -d "$resources_dir/.git" ]]; then
+    mkdir -p "$HOME/hack"
+    git clone "$RESOURCES_REPO_URL" "$resources_dir"
+  else
+    git -C "$resources_dir" pull --ff-only
+  fi
+
+  mkdir -p "$wordlists_dir"
+
+  for wordlist in "${WORDLISTS[@]}"; do
+    local target
+    target="$wordlists_dir/$(basename "$wordlist")"
+    if [[ ! -f "$target" ]]; then
+      curl -fsSL "$wordlist" -o "$target"
     fi
+  done
 
-    WORDLISTS_DIR="$RESOURCES_DIR/wordlists"
-    [[ ! -d $WORDLISTS_DIR ]] && mkdir -p $WORDLISTS_DIR
+  for repo in "${CLONE_WORDLISTS[@]}"; do
+    local name
+    name=$(basename "$repo" .git)
+    local target_dir="$wordlists_dir/$name"
 
-    # gist
-    for wordlist in "${WORDLISTS[@]}"; do
-        if [[ ! -f "$WORDLISTS_DIR/$(basename $wordlist)" ]]; then
-            wget -P "$WORDLISTS_DIR" "$wordlist"
-        fi
-    done
-
-    # git
-    for repo in "${CLONE_WORDLISTS[@]}"; do
-        git clone "$repo"
-        echo "Cloned $repo into the current directory."
-    done
-
-    # Download KiteRunner JSON datasets
-    KITERUNNER_DIR="$RESOURCES_DIR/kiterunner"
-    [[ ! -d $KITERUNNER_DIR ]] && mkdir -p $KITERUNNER_DIR
-    for json_url in "${KITERUNNER_JSONS[@]}"; do
-        wget -P "$KITERUNNER_DIR" "$json_url"
-        tar -xf "$KITERUNNER_DIR/$(basename "$json_url")" -C "$KITERUNNER_DIR/"
-    done
-
-    # Download Nuclei templates
-    NUCLEI_TEMPLATES_DIR="$WORDLISTS_DIR/nuclei-templates"
-    if [[ ! -d $NUCLEI_TEMPLATES_DIR ]]; then
-        git clone https://github.com/projectdiscovery/nuclei-templates.git "$NUCLEI_TEMPLATES_DIR"
-        echo "Nuclei templates downloaded to $NUCLEI_TEMPLATES_DIR."
+    if [[ ! -d "$target_dir/.git" ]]; then
+      git clone "$repo" "$target_dir"
     else
-        echo "Nuclei templates already exist in $NUCLEI_TEMPLATES_DIR."
+      git -C "$target_dir" pull --ff-only
     fi
+  done
+
+  local kiterunner_dir="$resources_dir/kiterunner"
+  mkdir -p "$kiterunner_dir"
+
+  for json_url in "${KITERUNNER_JSONS[@]}"; do
+    local archive_path="$kiterunner_dir/$(basename "$json_url")"
+    curl -fsSL "$json_url" -o "$archive_path"
+    tar -xf "$archive_path" -C "$kiterunner_dir/"
+  done
+
+  local nuclei_templates_dir="$wordlists_dir/nuclei-templates"
+  if [[ ! -d "$nuclei_templates_dir/.git" ]]; then
+    git clone https://github.com/projectdiscovery/nuclei-templates.git "$nuclei_templates_dir"
+  else
+    git -C "$nuclei_templates_dir" pull --ff-only
+  fi
+}
+
+install_snap_packages() {
+  if ! command -v snap >/dev/null 2>&1; then
+    echo "snap is not available, skipping snap package installs."
+    return
+  fi
+
+  for pkg in "${SNAP_PACKAGES[@]}"; do
+    if [[ "$pkg" == "code" ]]; then
+      sudo snap install --classic "$pkg"
+    else
+      sudo snap install "$pkg"
+    fi
+  done
 }
 
 generate_ssh_key() {
-    if [[ -f "$HOME/.ssh/id_rsa" ]]; then
-        echo "SSH key already exists. Skipping generation."
+  if [[ -f "$HOME/.ssh/id_rsa" ]]; then
+    echo "SSH key already exists. Skipping generation."
+    return
+  fi
+
+  mkdir -p "$HOME/.ssh"
+  chmod 700 "$HOME/.ssh"
+
+  ssh-keygen -t rsa -b 4096 -f "$HOME/.ssh/id_rsa" -N "" -C "$(whoami)@$(hostname).xyz"
+
+  eval "$(ssh-agent -s)"
+  ssh-add "$HOME/.ssh/id_rsa"
+
+  echo "SSH public key:"
+  cat "$HOME/.ssh/id_rsa.pub"
+}
+
+verify_essential_tools() {
+  local tools=(
+    "go"
+    "ffuf"
+    "h2csmuggler"
+    "kiterunner"
+    "assetfinder"
+    "anew"
+    "httprobe"
+    "waybackurls"
+    "gobuster"
+    "subfinder"
+    "httpx"
+    "nuclei"
+    "jsluice"
+    "amass"
+    "findomain"
+    "nmap"
+    "jq"
+    "curl"
+  )
+
+  echo
+  echo "Essential tool check:"
+  for tool in "${tools[@]}"; do
+    if command -v "$tool" >/dev/null 2>&1; then
+      printf '  [OK] %s -> %s\n' "$tool" "$(command -v "$tool")"
     else
-        echo "Generating a new SSH key..."
-        ssh-keygen -t rsa -b 4096 -f ~/.ssh/id_rsa -N "" -C "$(whoami)@$(hostname).xyz"
-
-        eval "$(ssh-agent -s)"
-        ssh-add ~/.ssh/id_rsa
-
-        echo "SSH key generated. Your public key is:"
-        cat ~/.ssh/id_rsa.pub
-        echo "Copy this key and add it to your GitHub/Bitbucket/etc."
+      printf '  [MISSING] %s\n' "$tool"
     fi
+  done
 }
 
 main() {
-    DESKTOP=""
+  local desktop=""
 
-    while [[ "$1" != "" ]]; do
-        case $1 in
-        --no-desktop) DESKTOP=0 ;;
-        --desktop) DESKTOP=1 ;;
-        esac
-        shift
+  while [[ "${1:-}" != "" ]]; do
+    case "$1" in
+    --no-desktop) desktop=0 ;;
+    --desktop) desktop=1 ;;
+    esac
+    shift
+  done
+
+  if [[ -z "$desktop" ]]; then
+    echo "Please choose one:"
+    select choice in "Desktop" "No Desktop"; do
+      case "$choice" in
+      Desktop)
+        desktop=1
+        break
+        ;;
+      "No Desktop")
+        desktop=0
+        break
+        ;;
+      esac
     done
+  fi
 
-    if [[ "$DESKTOP" == "" ]]; then
-        echo "Please choose one:"
-        select choice in "Desktop" "No Desktop"; do
-            case $choice in
-            Desktop)
-                DESKTOP=1
-                break
-                ;;
-            "No Desktop")
-                DESKTOP=0
-                break
-                ;;
-            esac
-        done
-    fi
+  install_environment
+  install_command_line_tools
+  add_my_binaries
+  setup_config
 
-    install_environment
-    install_command_line_tools
-    add_my_binaries
+  if [[ "$desktop" == "1" ]]; then
+    install_aquatone
+    install_snap_packages
+  fi
 
-    if [[ "$DESKTOP" == 1 ]]; then
-        install_aquatone
-    fi
-
-    setup_wordlists
-    generate_ssh_key
+  setup_wordlists
+  generate_ssh_key
+  verify_essential_tools
 }
 
 main "$@"
